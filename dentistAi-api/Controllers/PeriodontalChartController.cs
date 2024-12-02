@@ -82,22 +82,23 @@ namespace dentistAi_api.Controllers
             return Ok(new { Success = true, Message = "Chart soft deleted successfully." });
         }
 
-        [HttpPost("AddOrUpdateTeeth/{patientId}")]
-        public async Task<ActionResult> AddOrUpdateTeeth(string patientId, [FromBody] List<Tooth> teeth)
+       
+
+        [HttpPost("AddOrUpdateTeeth")]
+        public async Task<ActionResult> AddOrUpdateTeeth([FromBody] AddOrUpdateTeethDto input)
         {
-            if (teeth == null || !teeth.Any())
+            if (input.Teeth == null || !input.Teeth.Any())
             {
                 return BadRequest(new { Success = false, Message = "Teeth list cannot be empty." });
             }
 
-            // Optionally, you can pass a chartId if you want to update an existing chart
-            string chartId = teeth.First().ChartId; // Assuming the first tooth has the ChartId
-            var success = await _chartService.AddOrUpdateTeethAsync(chartId, patientId, teeth);
+            var success = await _chartService.AddOrUpdateTeethAsync(input.ChartId, input.TenantId, input.PatientId, input.Teeth);
             if (!success)
             {
                 return NotFound(new { Success = false, Message = "Chart not found." });
             }
             return Ok(new { Success = true, Message = "Teeth added or updated successfully." });
         }
+
     }
 }

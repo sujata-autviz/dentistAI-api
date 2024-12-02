@@ -1,4 +1,5 @@
 ﻿using dentistAi_api.Data;
+using dentistAi_api.DTOs;
 using dentistAi_api.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -18,9 +19,45 @@ namespace dentistAi_api.Services
             _patients = _context.Patients; // Assuming you have a Patients collection in your MongoDbContext
         }
 
-        public async Task<Patient> GetPatientByIdAsync(string id)
+        public async Task<Patient> GetPatientByIdAsync(string id, string tenantId)
         {
-            return await _patients.Find(p => p.Id == ObjectId.Parse(id) && !p.IsDeleted).FirstOrDefaultAsync();
+            return await _patients
+                .Find(p => p.Id == ObjectId.Parse(id) && p.TenantId == tenantId && !p.IsDeleted)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<Patient> GetPatientByPatientIdAsync(int? patientId, string tenantId)
+        {
+            return await _patients
+                .Find(p => p.PatientId == patientId && p.TenantId == tenantId && !p.IsDeleted)
+                .FirstOrDefaultAsync();
+        }
+        public async Task<PaginatedResult<Patient>> GetPatientsByDoctorIdsWithPaginationAsync(
+     IEnumerable<string> doctorIds,
+     string tenantId,
+     int pageNumber,
+     int pageSize)
+        {
+            var filter = Builders<Patient>.Filter.And(
+                Builders<Patient>.Filter.In(p => p.DoctorId, doctorIds),
+                Builders<Patient>.Filter.Eq(p => p.TenantId, tenantId),
+                Builders<Patient>.Filter.Eq(p => p.IsDeleted, false)
+            );
+
+            var totalCount = await _patients.CountDocumentsAsync(filter);
+            var patients = await _patients
+                .Find(filter)
+                .Skip((pageNumber - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
+
+            return new PaginatedResult<Patient>
+            {
+                Data = patients,
+                TotalCount = (int)totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         public async Task<IEnumerable<Patient>> GetPatientsByTenantIdAsync(string tenantId)
@@ -40,9 +77,9 @@ namespace dentistAi_api.Services
             return result.ModifiedCount > 0; // Return true if a document was modified
         }
 
-        public async Task<bool> DeletePatientAsync(string id)
+        public async Task<bool> DeletePatientAsync(string id , string tenantId)
         {
-            var patient = await GetPatientByIdAsync(id);
+            var patient = await GetPatientByIdAsync(id , tenantId);
             if (patient == null)
             {
                 return false; // Patient not found
@@ -52,5 +89,7 @@ namespace dentistAi_api.Services
             await _patients.ReplaceOneAsync(p => p.Id == ObjectId.Parse(id), patient); // Update the patient
             return true; // Return true if the patient was soft deleted
         }
+
+       
     }
 }

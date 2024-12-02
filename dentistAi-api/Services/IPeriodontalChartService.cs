@@ -11,6 +11,6 @@ namespace dentistAi_api.Services
         Task<bool> AddChartAsync(PeriodontalChart chart); // Add a new chart
         Task<bool> UpdateChartAsync(string id, PeriodontalChart chart); // Update an existing chart
         Task<bool> DeleteChartAsync(string id); // Soft delete a chart
-        Task<bool> AddOrUpdateTeethAsync(string chartId, string patientId, List<Tooth> teeth); // Add or update teeth in a chart
+        Task<bool> AddOrUpdateTeethAsync(string? chartId,string tenantId, string patientId, List<Tooth> teeth); // Add or update teeth in a chart
     }
 }

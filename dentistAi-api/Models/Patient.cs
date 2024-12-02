@@ -11,6 +11,10 @@ namespace dentistAi_api.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string TenantId { get; set; } // Identifier for multi-tenancy
 
+        public int? PatientId { get; set; }
+
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string DoctorId { get; set; }
         public string Name { get; set; }
         public int Age { get; set; }
         public string Gender { get; set; }

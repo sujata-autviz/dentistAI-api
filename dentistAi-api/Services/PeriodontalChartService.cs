@@ -72,7 +72,7 @@ namespace dentistAi_api.Services
             return true; // Return true if the chart was soft deleted
         }
 
-        public async Task<bool> AddOrUpdateTeethAsync(string chartId, string patientId, List<Tooth> teeth)
+        public async Task<bool> AddOrUpdateTeethAsync(string? chartId, string patientId, string TenantId, List<Tooth> teeth)
         {
             PeriodontalChart chart;
 
@@ -95,7 +95,7 @@ namespace dentistAi_api.Services
 
                 chart = new PeriodontalChart
                 {
-                    TenantId = teeth.First().TenantId, // Assuming all teeth have the same TenantId
+                    TenantId = TenantId, // Assuming all teeth have the same TenantId
                     PatientID = patientId, // Use the provided PatientID as a string
                     ChartDate = DateTime.UtcNow, // Set the current date as the chart date
                     Teeth = new List<Tooth>() // Initialize the teeth list
@@ -105,13 +105,12 @@ namespace dentistAi_api.Services
             // Update existing teeth or add new ones
             foreach (var tooth in teeth)
             {
-                // Set the ChartId for each tooth
-                tooth.ChartId = chart.Id.ToString();
+                
 
                 // Check if the tooth already exists in the database based on ToothNumber and ChartId
-                var existingToothInDb = await _context.Teeth
-                    .Find(t => t.ToothNumber == tooth.ToothNumber && t.ChartId == tooth.ChartId)
-                    .FirstOrDefaultAsync();
+                var existingToothInDb = chart.Teeth
+             .FirstOrDefault(t => t.ToothNumber == tooth.ToothNumber);
+
 
                 if (existingToothInDb != null)
                 {
@@ -120,6 +119,24 @@ namespace dentistAi_api.Services
                     existingToothInDb.FurcationGrade = tooth.FurcationGrade;
                     existingToothInDb.IsMissingTooth = tooth.IsMissingTooth;
                     existingToothInDb.HasImplant = tooth.HasImplant;
+
+                    // Update the additional properties related to the tooth
+                    existingToothInDb.DistalBuccal = tooth.DistalBuccal;
+                    existingToothInDb.Buccal = tooth.Buccal;
+                    existingToothInDb.MesialBuccal = tooth.MesialBuccal;
+                    existingToothInDb.DistalLingual = tooth.DistalLingual;
+                    existingToothInDb.Lingual = tooth.Lingual;
+                    existingToothInDb.MesialLingual = tooth.MesialLingual;
+
+                    // Properties for teeth 6-11, 22-27 (likely for different sets of teeth)
+                    existingToothInDb.DistalFacial = tooth.DistalFacial;
+                    existingToothInDb.Facial = tooth.Facial;
+                    existingToothInDb.MesialFacial = tooth.MesialFacial;
+                    existingToothInDb.DistalPalatial = tooth.DistalPalatial;
+                    existingToothInDb.Palatial = tooth.Palatial;
+                    existingToothInDb.MesialPalatial = tooth.MesialPalatial;
+
+
 
                     // Update Clinical Attachment Level (CAL) properties
                     //existingToothInDb.ClinicalAttachmentLevelBuccalLeft =
@@ -175,12 +192,7 @@ namespace dentistAi_api.Services
                     existingToothInDb.IsSuppurationLingualRight = tooth.IsSuppurationLingualRight;
 
                     // Update Pocket Depth measurements
-                    existingToothInDb.PocketDepthBuccalLeft = tooth.PocketDepthBuccalLeft;
-                    existingToothInDb.PocketDepthBuccalCenter = tooth.PocketDepthBuccalCenter;
-                    existingToothInDb.PocketDepthBuccalRight = tooth.PocketDepthBuccalRight;
-                    existingToothInDb.PocketDepthLingualLeft = tooth.PocketDepthLingualLeft;
-                    existingToothInDb.PocketDepthLingualCenter = tooth.PocketDepthLingualCenter;
-                    existingToothInDb.PocketDepthLingualRight = tooth.PocketDepthLingualRight;
+           
 
                     // Update Gingival Margin measurements
                     existingToothInDb.GingivalMarginBuccalLeft = tooth.GingivalMarginBuccalLeft;
@@ -190,8 +202,7 @@ namespace dentistAi_api.Services
                     existingToothInDb.GingivalMarginLingualCenter = tooth.GingivalMarginLingualCenter;
                     existingToothInDb.GingivalMarginLingualRight = tooth.GingivalMarginLingualRight;
 
-                    // Save the updated tooth back to the database
-                    await _context.Teeth.ReplaceOneAsync(t => t.Id == existingToothInDb.Id, existingToothInDb);
+         
                     var existingToothInChart = chart.Teeth.FirstOrDefault(t => t.ToothNumber == tooth.ToothNumber);
                     if (existingToothInChart != null)
                     {
@@ -219,8 +230,7 @@ namespace dentistAi_api.Services
                     // Add new tooth to the chart
                     chart.Teeth.Add(tooth);
 
-                    // Insert new tooth into the database
-                    await _context.Teeth.InsertOneAsync(tooth);
+            
                 }
             }
 

@@ -15,7 +15,7 @@ namespace dentistAi_api.Services
         public ToothService(MongoDbContext context)
         {
             _context = context;
-            _teeth = _context.Teeth; // Assuming you have a Teeth collection in your MongoDbContext
+            //_teeth = _context.Teeth; // Assuming you have a Teeth collection in your MongoDbContext
         }
 
         public async Task<Tooth> GetToothByIdAsync(string id)
@@ -23,10 +23,10 @@ namespace dentistAi_api.Services
             return await _teeth.Find(t => t.Id == ObjectId.Parse(id) && !t.IsDeleted).FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<Tooth>> GetTeethByChartIdAsync(string chartId)
-        {
-            return await _teeth.Find(t => t.ChartId == chartId && !t.IsDeleted).ToListAsync();
-        }
+        //public async Task<IEnumerable<Tooth>> GetTeethByChartIdAsync(string chartId)
+        //{
+        //    return await _teeth.Find(t => t.ChartId == chartId && !t.IsDeleted).ToListAsync();
+        //}
 
         public async Task<bool> AddToothAsync(Tooth tooth)
         {

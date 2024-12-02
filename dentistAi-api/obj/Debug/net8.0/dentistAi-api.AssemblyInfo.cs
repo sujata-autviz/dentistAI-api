@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("dentistAi-api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+61cb8564b4f2bfb0e73cbeed8fbd7ebcb3a4cd02")]
 [assembly: System.Reflection.AssemblyProductAttribute("dentistAi-api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("dentistAi-api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

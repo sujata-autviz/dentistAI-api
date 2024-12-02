@@ -20,10 +20,13 @@ namespace dentistAi_api.Services
             private readonly MongoDbContext _context;
         private readonly IConfiguration _config;
         private readonly EmailHelper _emailHelper;
-        public AuthenticationService(MongoDbContext context , IConfiguration config , IWebHostEnvironment env)
+        private readonly IMongoCollection<Role> _roles;
+        public AuthenticationService(MongoDbContext context , IConfiguration config , 
+            IWebHostEnvironment env )
             {
                 _context = context;
             _config = config;
+            _roles = context.Roles;
             _emailHelper = new EmailHelper(config, env);
         }
 
@@ -38,15 +41,33 @@ namespace dentistAi_api.Services
                 user.PasswordHash = HashPassword(user.PasswordHash);
                 await _context.Users.InsertOneAsync(user);
             var fullName = $"{user.FirstName} {user.LastName}".Trim();
-            var emailSent = await _emailHelper.SendEmailOnUserCreation(fullName, user.Email, user.Id.ToString());
+            var existingRole = await _roles.Find(r => r.Name == user.Role && r.TenantId == user.TenantId && !r.IsDeleted).FirstOrDefaultAsync();
+
+            // If the role doesn't exist, create it
+            if (existingRole == null)
+            {
+                var newRole = new Role
+                {
+                    Name = user.Role,
+                    TenantId = user.TenantId,
+                    IsDeleted = false
+                };
+
+                // Insert the new role into the Roles collection
+                await _roles.InsertOneAsync(newRole);
+
+                // Optionally, assign the new role to the user
+                user.Role = newRole.Name;
+            }
+            //var emailSent = await _emailHelper.SendEmailOnUserCreation(fullName, user.Email, user.Id.ToString());
 
             return true;
             }
 
         // Login a user
-        public async Task<string> LoginAsync(LoginDto loginDto)
+
+        public async Task<LoginResponseDto> LoginAsync(LoginDto loginDto)
         {
-            // Use FirstOrDefaultAsync to execute the query and get a single user
             var user = await _context.Users
                                      .Find(u => u.Email == loginDto.Email)
                                      .FirstOrDefaultAsync();
@@ -56,8 +77,39 @@ namespace dentistAi_api.Services
                 return null;
             }
 
-            return GenerateJwtToken(user);
+            var userDto = new UserDto
+            {
+                Id = user.Id.ToString(),
+                Email = user.Email,
+                FirstName = user.LastName,
+                LastName = user.LastName,
+                Role = user.Role ,
+                TenantId =user.TenantId
+                // Add any additional fields to the UserDto as needed
+            };
+
+            var token = GenerateJwtToken(user);
+            return new LoginResponseDto
+            {
+                Token = token,
+                User = userDto
+            };
         }
+
+        //public async Task<string> LoginAsync(LoginDto loginDto)
+        //{
+        //    // Use FirstOrDefaultAsync to execute the query and get a single user
+        //    var user = await _context.Users
+        //                             .Find(u => u.Email == loginDto.Email)
+        //                             .FirstOrDefaultAsync();
+
+        //    if (user == null || !VerifyPassword(user.PasswordHash, loginDto.Password) || !user.IsActive)
+        //    {
+        //        return null;
+        //    }
+
+        //    return GenerateJwtToken(user);
+        //}
 
         public async Task<(bool Success, string ErrorMessage)> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
         {
