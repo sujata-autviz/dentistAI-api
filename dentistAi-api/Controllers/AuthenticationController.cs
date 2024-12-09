@@ -31,13 +31,20 @@ namespace dentistAi_api.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var token = await _authenticationService.LoginAsync(loginDto);
-            if (token == null)
+            var loginResponse = await _authenticationService.LoginAsync(loginDto);
+            if (loginResponse == null)
             {
                 return Unauthorized("Invalid credentials or email not confirmed");
             }
-            return Ok(new { token });
+
+            return Ok(new
+            {
+                success = true,
+                message = "Login successful",
+                data = loginResponse
+            });
         }
+
 
         [HttpPost("ResetPassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
