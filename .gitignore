@@ -1,0 +1,19 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/dentistAi-api/config/applicationhost.config
+/.vs/dentistAi-api/DesignTimeBuild/.dtbcache.v2
+/.vs/dentistAi-api/FileContentIndex/67b355c9-6f8f-40aa-95aa-c7cd74004b40.vsidx
+/.vs/dentistAi-api/FileContentIndex/8e4e67f1-0719-40d3-a32f-807dbf9dcaaa.vsidx
+/.vs/dentistAi-api/FileContentIndex/a560a52f-275d-4e24-b5a7-b49d51327271.vsidx
+/.vs/dentistAi-api/FileContentIndex/d28c68d2-ee48-4efe-bcf3-d56d15890e35.vsidx
+/.vs/dentistAi-api/FileContentIndex/eedec37b-c1f0-4dea-96aa-b10fe90cb685.vsidx
+/.vs/dentistAi-api/v17/.futdcache.v2
+/.vs/dentistAi-api/v17/.suo
+/.vs/dentistAi-api/v17/DocumentLayout.backup.json
+/.vs/dentistAi-api/v17/DocumentLayout.json
+/.vs/ProjectEvaluation/dentistai-api.metadata.v9.bin
+/.vs/ProjectEvaluation/dentistai-api.projects.v9.bin
+/.vs/ProjectEvaluation/dentistai-api.strings.v9.bin
+/dentistAi-api/obj/Debug/net8.0/dentistAi-api.sourcelink.json
