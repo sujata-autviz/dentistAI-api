@@ -37,7 +37,8 @@ namespace dentistAi_api.Controllers
         [HttpGet("GetTeethByChartId/{chartId}")]
         public async Task<ActionResult<IEnumerable<Tooth>>> GetTeethByChartId(string chartId)
         {
-            var teeth = await _toothService.GetTeethByChartIdAsync(chartId);
+            //var teeth = await _toothService.GetTeethByChartIdAsync(chartId);
+            var teeth = "";
             return Ok(new { Success = true, Message = "Teeth retrieved successfully.", Teeth = teeth });
         }
 

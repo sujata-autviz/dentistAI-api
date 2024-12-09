@@ -20,16 +20,59 @@ namespace dentistAi_api.Services
             _charts = _context.PeriodontalCharts; // Assuming you have a PeriodontalCharts collection in your MongoDbContext
         }
 
-        public async Task<PeriodontalChart> GetChartByIdAsync(string id)
+        public async Task<PeriodontalChartDto> GetChartByIdAsync(string id, string tenantId)
         {
-            return await _charts.Find(c => c.Id == ObjectId.Parse(id) && !c.IsDeleted).FirstOrDefaultAsync();
+            // Fetch the chart from the database using the given id and tenantId
+            var chart = await _charts
+                .Find(c => c.Id == ObjectId.Parse(id) && !c.IsDeleted && c.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            // If the chart is found, map it to PeriodontalChartDto, otherwise return null
+            if (chart == null)
+            {
+                return null;  // Or handle this case as needed, e.g., throw an exception or return an empty DTO
+            }
+
+            // Map the chart to a PeriodontalChartDto and return
+            return new PeriodontalChartDto
+            {
+                Id = chart.Id.ToString(), // Convert ObjectId to string
+                PatientID = chart.PatientID,
+                IsDeleted = chart.IsDeleted,
+                TenantId = chart.TenantId,
+                ChartDate = chart.ChartDate,
+                UpdatedAt = chart.UpdatedAt,
+                DoctorId = chart.DoctorId,
+                CreatedAt = chart.CreatedAt,
+                Teeth = chart.Teeth
+            };
         }
 
-        //public async Task<IEnumerable<PeriodontalChart>> GetChartsByPatientIdAsync(string patientId)
-        //{
-        //    return await _charts.Find(c => c.PatientID == patientId && !c.IsDeleted).ToListAsync();
-        //}
+
+        public async Task<PeriodontalChart> GetChart(string id , string tenantId)
+        {
+          return await _charts
+                 .Find(c => c.Id == ObjectId.Parse(id) && !c.IsDeleted && c.TenantId == tenantId)
+                 .FirstOrDefaultAsync();
+        }
+        public async Task<IEnumerable<PeriodontalChartDto>> GetChartsByPatientAndTenantIdAsync(string patientId, string tenantId)
+{
    
+
+    var charts = await _charts.Find(c => c.PatientID == patientId && !c.IsDeleted && c.TenantId == tenantId).ToListAsync();
+            return charts.Select(c => new PeriodontalChartDto
+    {
+        Id = c.Id.ToString(),
+        PatientID = c.PatientID,
+        TenantId = c.TenantId,
+        DoctorId = c.DoctorId,
+        Teeth = c.Teeth,
+        // Check if UpdatedAt is present, otherwise fall back to CreatedAt
+        CreatedAt = c.CreatedAt,
+        UpdatedAt = c.UpdatedAt // Use UpdatedAt if available, else use CreatedAt
+    }).OrderByDescending(x=>x.CreatedAt);
+}
+
         public async Task<IEnumerable<PeriodontalChartDto>> GetChartsByPatientIdAsync(string patientId)
         {
             var charts = await _charts.Find(c => c.PatientID == patientId && !c.IsDeleted).ToListAsync();
@@ -41,17 +84,23 @@ namespace dentistAi_api.Services
                 TenantId = c.TenantId,
                 ChartDate = c.ChartDate,
                 UpdatedAt = c.UpdatedAt,
+                DoctorId = c.DoctorId,
                 CreatedAt  = c.CreatedAt,
                 Teeth = c.Teeth,
               
             });
         }
 
-        public async Task<bool> AddChartAsync(PeriodontalChart chart)
+
+        public async Task<string> AddChartAsync(PeriodontalChart chart)
         {
+            // Insert the chart into the database
             await _charts.InsertOneAsync(chart);
-            return true; // Return true if the chart was added successfully
+
+            // Return the generated ChartId
+            return chart.Id.ToString();
         }
+
 
         public async Task<bool> UpdateChartAsync(string id, PeriodontalChart chart)
         {
@@ -59,9 +108,9 @@ namespace dentistAi_api.Services
             return result.ModifiedCount > 0; // Return true if a document was modified
         }
 
-        public async Task<bool> DeleteChartAsync(string id)
+        public async Task<bool> DeleteChartAsync(string id , string tenantId)
         {
-            var chart = await GetChartByIdAsync(id);
+            var chart = await GetChart(id, tenantId);
             if (chart == null)
             {
                 return false; // Chart not found
@@ -72,17 +121,17 @@ namespace dentistAi_api.Services
             return true; // Return true if the chart was soft deleted
         }
 
-        public async Task<bool> AddOrUpdateTeethAsync(string chartId, string patientId, List<Tooth> teeth)
+        public async Task<(bool success , string? chartId)> AddOrUpdateTeethAsync(string? chartId, string tenantId, string patientId, string doctorId, List<Tooth> teeth)
         {
             PeriodontalChart chart;
 
             // Check if the chart exists
             if (!string.IsNullOrEmpty(chartId))
             {
-                chart = await GetChartByIdAsync(chartId);
+                chart = await GetChart(chartId, tenantId);
                 if (chart == null)
                 {
-                    return false; // Chart not found
+                    return (false , null); // Chart not found
                 }
             }
             else
@@ -90,14 +139,16 @@ namespace dentistAi_api.Services
                 // Create a new chart if chartId is not provided
                 if (teeth == null || !teeth.Any())
                 {
-                    return false; // No teeth provided to create a new chart
+                    return (false, null); // No teeth provided to create a new chart
                 }
 
                 chart = new PeriodontalChart
                 {
-                    TenantId = teeth.First().TenantId, // Assuming all teeth have the same TenantId
-                    PatientID = patientId, // Use the provided PatientID as a string
-                    ChartDate = DateTime.UtcNow, // Set the current date as the chart date
+                     // Assuming all teeth have the same TenantId
+                    PatientID = patientId,
+                    TenantId = tenantId,// Use the provided PatientID as a string
+                    ChartDate = DateTime.UtcNow,
+                    DoctorId =  doctorId,// Set the current date as the chart date
                     Teeth = new List<Tooth>() // Initialize the teeth list
                 };
             }
@@ -105,13 +156,12 @@ namespace dentistAi_api.Services
             // Update existing teeth or add new ones
             foreach (var tooth in teeth)
             {
-                // Set the ChartId for each tooth
-                tooth.ChartId = chart.Id.ToString();
+                
 
                 // Check if the tooth already exists in the database based on ToothNumber and ChartId
-                var existingToothInDb = await _context.Teeth
-                    .Find(t => t.ToothNumber == tooth.ToothNumber && t.ChartId == tooth.ChartId)
-                    .FirstOrDefaultAsync();
+                var existingToothInDb = chart.Teeth
+             .FirstOrDefault(t => t.ToothNumber == tooth.ToothNumber);
+
 
                 if (existingToothInDb != null)
                 {
@@ -120,6 +170,24 @@ namespace dentistAi_api.Services
                     existingToothInDb.FurcationGrade = tooth.FurcationGrade;
                     existingToothInDb.IsMissingTooth = tooth.IsMissingTooth;
                     existingToothInDb.HasImplant = tooth.HasImplant;
+
+                    // Update the additional properties related to the tooth
+                    existingToothInDb.DistalBuccal = tooth.DistalBuccal;
+                    existingToothInDb.Buccal = tooth.Buccal;
+                    existingToothInDb.MesialBuccal = tooth.MesialBuccal;
+                    existingToothInDb.DistalLingual = tooth.DistalLingual;
+                    existingToothInDb.Lingual = tooth.Lingual;
+                    existingToothInDb.MesialLingual = tooth.MesialLingual;
+
+                    // Properties for teeth 6-11, 22-27 (likely for different sets of teeth)
+                    existingToothInDb.DistalFacial = tooth.DistalFacial;
+                    existingToothInDb.Facial = tooth.Facial;
+                    existingToothInDb.MesialFacial = tooth.MesialFacial;
+                    existingToothInDb.DistalPalatial = tooth.DistalPalatial;
+                    existingToothInDb.Palatial = tooth.Palatial;
+                    existingToothInDb.MesialPalatial = tooth.MesialPalatial;
+
+
 
                     // Update Clinical Attachment Level (CAL) properties
                     //existingToothInDb.ClinicalAttachmentLevelBuccalLeft =
@@ -175,12 +243,7 @@ namespace dentistAi_api.Services
                     existingToothInDb.IsSuppurationLingualRight = tooth.IsSuppurationLingualRight;
 
                     // Update Pocket Depth measurements
-                    existingToothInDb.PocketDepthBuccalLeft = tooth.PocketDepthBuccalLeft;
-                    existingToothInDb.PocketDepthBuccalCenter = tooth.PocketDepthBuccalCenter;
-                    existingToothInDb.PocketDepthBuccalRight = tooth.PocketDepthBuccalRight;
-                    existingToothInDb.PocketDepthLingualLeft = tooth.PocketDepthLingualLeft;
-                    existingToothInDb.PocketDepthLingualCenter = tooth.PocketDepthLingualCenter;
-                    existingToothInDb.PocketDepthLingualRight = tooth.PocketDepthLingualRight;
+           
 
                     // Update Gingival Margin measurements
                     existingToothInDb.GingivalMarginBuccalLeft = tooth.GingivalMarginBuccalLeft;
@@ -190,8 +253,7 @@ namespace dentistAi_api.Services
                     existingToothInDb.GingivalMarginLingualCenter = tooth.GingivalMarginLingualCenter;
                     existingToothInDb.GingivalMarginLingualRight = tooth.GingivalMarginLingualRight;
 
-                    // Save the updated tooth back to the database
-                    await _context.Teeth.ReplaceOneAsync(t => t.Id == existingToothInDb.Id, existingToothInDb);
+         
                     var existingToothInChart = chart.Teeth.FirstOrDefault(t => t.ToothNumber == tooth.ToothNumber);
                     if (existingToothInChart != null)
                     {
@@ -219,15 +281,15 @@ namespace dentistAi_api.Services
                     // Add new tooth to the chart
                     chart.Teeth.Add(tooth);
 
-                    // Insert new tooth into the database
-                    await _context.Teeth.InsertOneAsync(tooth);
+            
                 }
             }
 
             // If a new chart was created, insert it into the database
             if (string.IsNullOrEmpty(chartId))
             {
-                await AddChartAsync(chart); // Add the new chart
+
+                chartId = await AddChartAsync(chart); // Add the new chart
             }
             else
             {
@@ -235,7 +297,7 @@ namespace dentistAi_api.Services
                 await UpdateChartAsync(chartId, chart);
             }
 
-            return true; // Return true if teeth were added or updated successfully
+            return (true, chartId); // Return true if teeth were added or updated successfully
         }
     }
 }

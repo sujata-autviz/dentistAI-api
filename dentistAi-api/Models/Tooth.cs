@@ -8,21 +8,41 @@ namespace dentistAi_api.Models
     public class Tooth : BaseEntity
     {
 
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string TenantId { get; set; } // Identifier for multi-tenancy
+        //[BsonRepresentation(BsonType.ObjectId)]
+        //public string TenantId { get; set; } // Identifier for multi-tenancy
 
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string ChartId { get; set; } // Reference to the periodontal chart
+        //[BsonRepresentation(BsonType.ObjectId)]
+        //public string ChartId { get; set; } // Reference to the periodontal chart
 
         public int ToothNumber { get; set; } // E.g., 19, 32
 
-        // Pocket Depth measurements (PD) - 6 points per tooth
-        public int? PocketDepthBuccalLeft { get; set; }
-        public int? PocketDepthBuccalCenter { get; set; }
-        public int? PocketDepthBuccalRight { get; set; }
-        public int? PocketDepthLingualLeft { get; set; }
-        public int? PocketDepthLingualCenter { get; set; }
-        public int? PocketDepthLingualRight { get; set; }
+        // Properties for teeth 1-5, 12-21, 28-32
+        public decimal? DistalBuccal { get; set; }
+        public decimal? Buccal { get; set; }
+        public decimal? MesialBuccal { get; set; }
+        public decimal? DistalLingual { get; set; }
+        public decimal? Lingual { get; set; }
+        public decimal? MesialLingual { get; set; }
+
+        // Properties for teeth 6-11, 22-27
+        public decimal? DistalFacial { get; set; }
+        public decimal? Facial { get; set; }
+        public decimal? MesialFacial { get; set; }
+        public decimal? DistalPalatial { get; set; }
+        public decimal? Palatial { get; set; }
+        public decimal? MesialPalatial { get; set; }
+
+
+
+
+
+        //// Pocket Depth measurements (PD) - 6 points per tooth
+        //public int? PocketDepthBuccalLeft { get; set; }
+        //public int? PocketDepthBuccalCenter { get; set; }
+        //public int? PocketDepthBuccalRight { get; set; }
+        //public int? PocketDepthLingualLeft { get; set; }
+        //public int? PocketDepthLingualCenter { get; set; }
+        //public int? PocketDepthLingualRight { get; set; }
 
         // Gingival Margin measurements (GM) - 6 points per tooth
         public int? GingivalMarginBuccalLeft { get; set; }
