@@ -62,6 +62,7 @@ builder.Services.AddHttpClient<SpeechRecognitionService>();
 builder.Services.AddScoped<TranscriptLogsService>();
 // Ensure this line is present
 builder.Services.AddScoped<SpeechRecognitionService>();
+builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<NotificationService>();
 
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:SecretKey"]);

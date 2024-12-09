@@ -47,7 +47,7 @@ namespace dentistAi_api.Controllers
         }
 
         [HttpPost("AddPatient")]
-        public async Task<ActionResult> AddPatient([FromBody] Patient patient)
+        public async Task<ActionResult> AddPatient([FromBody] PatientDto patient)
         {
             if (patient == null)
             {
@@ -56,32 +56,31 @@ namespace dentistAi_api.Controllers
 
             var result = await _patientService.AddPatientAsync(patient);
 
-            if (result)
+            if (result.Success)
             {
-                return Ok(new { Success = true, Message = "Patient added successfully." });
+                return Ok(new { Success = true, Message = result.Message });
             }
             else
             {
-                return StatusCode(500, new { Success = false, Message = "Failed to add patient." });
+                return StatusCode(500, new { Success = false, Message = result.Message });
             }
         }
 
 
         [HttpPut("UpdatePatient/{id}")]
-        public async Task<ActionResult> UpdatePatient(string id, [FromBody] Patient patient)
+        public async Task<ActionResult> UpdatePatient(string id, [FromBody] PatientDto patient)
         {
             if (!ObjectId.TryParse(id, out var objectId))
             {
                 return BadRequest(new { Success = false, Message = "Invalid ID format." });
             }
 
-            patient.Id = objectId; // Ensure the ID is set correctly
-            var success = await _patientService.UpdatePatientAsync(objectId.ToString(), patient);
+            var success = await _patientService.UpdatePatientAsync(id, patient);
             if (!success)
             {
                 return NotFound(new { Success = false, Message = "Patient not found." });
             }
-            return Ok(new { Success = true, Message = "Patient updated successfully." }); // Return success message
+            return Ok(new { Success = true, Message = "Patient updated successfully." });
         }
 
         [HttpDelete("DeletePatient/{id}")]
@@ -119,18 +118,19 @@ namespace dentistAi_api.Controllers
         }
 
         [HttpGet("GetPatientsByDoctorIdsWithPagination")]
-        public async Task<ActionResult<PaginatedResult<Patient>>> GetPatientsByDoctorIdsWithPaginationAsync(
+        public async Task<ActionResult<PaginatedResult<PatientDto>>> GetPatientsByDoctorIdsWithPaginationAsync(
          [FromQuery] IEnumerable<string> doctorIds,
          [FromQuery] string tenantId,
          [FromQuery] int pageNumber = 1,
-         [FromQuery] int pageSize = 10)
+         [FromQuery] int pageSize = 10,
+        [FromQuery] string searchTerm = null)
         {
             if (doctorIds == null || !doctorIds.Any() || string.IsNullOrEmpty(tenantId))
             {
                 return BadRequest(new { Success = false, Message = "Doctor IDs and Tenant ID are required." });
             }
 
-            var result = await _patientService.GetPatientsByDoctorIdsWithPaginationAsync(doctorIds, tenantId, pageNumber, pageSize);
+            var result = await _patientService.GetPatientsByDoctorIdsWithPaginationAsync(doctorIds, tenantId, pageNumber, pageSize,searchTerm);
 
             if (result == null || !result.Data.Any())
             {
@@ -138,6 +138,13 @@ namespace dentistAi_api.Controllers
             }
 
             return Ok(new { Success = true, Patients = result.Data, TotalCount = result.TotalCount, PageNumber = result.PageNumber, PageSize = result.PageSize });
+        }
+
+        [HttpGet("NextpatientId/{tenantId}/{doctorId}")]
+        public async Task<IActionResult> GetNextPatientId(string tenantId , string doctorId)
+        {
+            int nextPatientId = await _patientService.GetNextPatientIdAsync(tenantId, doctorId);
+            return Ok(nextPatientId);
         }
 
     }

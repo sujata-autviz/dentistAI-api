@@ -20,15 +20,15 @@ namespace dentistAi_api.Controllers
             _chartService = chartService;
         }
 
-        [HttpGet("GetChart/{id}")]
-        public async Task<ActionResult<PeriodontalChart>> GetChart(string id)
+        [HttpGet("GetChart/{id}/{tenantId}")]
+        public async Task<ActionResult<PeriodontalChartDto>> GetChart(string id, string tenantId)
         {
             if (!ObjectId.TryParse(id, out var objectId))
             {
                 return BadRequest(new { Success = false, Message = "Invalid ID format." });
             }
 
-            var chart = await _chartService.GetChartByIdAsync(objectId.ToString());
+            var chart = await _chartService.GetChartByIdAsync(objectId.ToString(), tenantId);
             if (chart == null)
             {
                 return NotFound(new { Success = false, Message = "Chart not found." });
@@ -37,7 +37,7 @@ namespace dentistAi_api.Controllers
         }
 
         [HttpGet("GetChartsByPatientId/{patientId}")]
-        public async Task<ActionResult<IEnumerable<PeriodontalChartDto>>> GetChartsByPatientId(string patientId)
+        public async Task<ActionResult<IEnumerable<PeriodontalChartDto>>> GetChartsByPatientId(string patientId ,string tenantId)
         {
             var charts = await _chartService.GetChartsByPatientIdAsync(patientId);
             return Ok(new { Success = true, Message = "Charts retrieved successfully.", Charts = charts });
@@ -67,14 +67,14 @@ namespace dentistAi_api.Controllers
         }
 
         [HttpDelete("DeleteChart/{id}")]
-        public async Task<ActionResult> DeleteChart(string id)
+        public async Task<ActionResult> DeleteChart(string id , string tenantId)
         {
             if (!ObjectId.TryParse(id, out var objectId))
             {
                 return BadRequest(new { Success = false, Message = "Invalid ID format." });
             }
 
-            var success = await _chartService.DeleteChartAsync(objectId.ToString());
+            var success = await _chartService.DeleteChartAsync(objectId.ToString(), tenantId);
             if (!success)
             {
                 return NotFound(new { Success = false, Message = "Chart not found." });
@@ -92,13 +92,34 @@ namespace dentistAi_api.Controllers
                 return BadRequest(new { Success = false, Message = "Teeth list cannot be empty." });
             }
 
-            var success = await _chartService.AddOrUpdateTeethAsync(input.ChartId, input.TenantId, input.PatientId, input.Teeth);
+            var (success, chartId) = await _chartService.AddOrUpdateTeethAsync(input.ChartId, input.TenantId, input.PatientId, input.DoctorId, input.Teeth);
             if (!success)
             {
                 return NotFound(new { Success = false, Message = "Chart not found." });
             }
-            return Ok(new { Success = true, Message = "Teeth added or updated successfully." });
+            return Ok(new { Success = true, Message = "Teeth added or updated successfully." , chartId = chartId });
         }
+
+        [HttpGet("GetChartsByPatientAndTenantId")]
+        public async Task<ActionResult> GetChartsByPatientAndTenantId(
+     [FromQuery] string patientId,
+     [FromQuery] string tenantId)
+        {
+            if (string.IsNullOrEmpty(patientId) || string.IsNullOrEmpty(tenantId))
+            {
+                return BadRequest(new { Success = false, Message = "PatientId and TenantId are required." });
+            }
+
+            var charts = await _chartService.GetChartsByPatientAndTenantIdAsync(patientId, tenantId);
+
+            if (charts == null || !charts.Any())
+            {
+                return Ok(new { Success = false, Message = "No charts found for the given PatientId and TenantId." });
+            }
+
+            return Ok(new { Success = true, Message = "Charts retrieved successfully.", Chart = charts });
+        }
+
 
     }
 }
