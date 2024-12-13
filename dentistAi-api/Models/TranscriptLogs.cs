@@ -9,10 +9,8 @@ namespace dentistAi_api.Models
     public class TranscriptLogs : BaseEntity
     {
         public string Text { get; set; }
-        [BsonRepresentation(BsonType.ObjectId)]
         public string TenantId { get; set; }
 
-        [BsonRepresentation(BsonType.ObjectId)]
         public string ChartId { get; set; }
      
     }

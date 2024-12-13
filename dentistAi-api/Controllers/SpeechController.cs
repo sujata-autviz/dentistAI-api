@@ -1,6 +1,7 @@
 ﻿using dentistAi_api.DTOs;
 using dentistAi_api.Services;
 using Microsoft.AspNetCore.Mvc;
+using ZstdSharp.Unsafe;
 
 namespace dentistAi_api.Controllers
 {
@@ -29,6 +30,19 @@ namespace dentistAi_api.Controllers
             }
         }
 
+        [HttpPost("StartVoiceRecognition")]
+        public async Task<IActionResult> StartVoiceRecognitionAsync(VoiceRecognitionRequestDto request)
+        {
+            if (request.AudioFile == null || request.AudioFile.Length == 0)
+            {
+                return BadRequest("Audio file is required.");
+            }
+
+            var result = await _speechRecognitionService.ProcessAudioAsync(request);
+            return Ok(new { content = result });
+        }
+
+      
 
     }
 }
